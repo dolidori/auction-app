@@ -15,25 +15,29 @@
         <div class="card login-card">
             <h1>🏫 학급 경매</h1>
             
-            <div id="student-form">
-                <p class="guide-text">캐릭터 선택</p>
-                <div class="avatar-grid" id="avatar-grid"></div>
+            <div id="student-form" class="form-content">
+                <p class="guide-text">내 캐릭터 선택</p>
+                <!-- 아바타 그리드를 스크롤 영역으로 -->
+                <div class="avatar-scroll-area">
+                    <div class="avatar-grid" id="avatar-grid"></div>
+                </div>
                 
                 <div class="input-container">
-                    <input type="text" id="nickname" placeholder="닉네임" maxlength="6">
-                    <input type="number" id="initial-budget" placeholder="가진 돈 (예: 10000)">
+                    <input type="text" id="nickname" placeholder="닉네임 (최대 6글자)" maxlength="6">
+                    <input type="number" id="initial-budget" placeholder="입찰 가능액 (예: 100)">
                     <input type="number" id="room-code-input" placeholder="방번호 숫자">
                 </div>
                 <button class="btn-primary" onclick="requestJoin('student')">입장하기</button>
 
-                <p class="teacher-link" onclick="toggleTeacherMode()">선생님으로 입장하기</p>
+                <div class="teacher-toggle-btn" onclick="toggleTeacherMode()">선생님으로 입장하기</div>
             </div>
 
-            <div id="teacher-form" style="display:none;">
+            <div id="teacher-form" class="form-content" style="display:none;">
                 <h2>선생님 입장</h2>
-                <p>방 번호는 입장 후 생성됩니다.</p>
+                <div class="spacer"></div>
                 <button class="btn-primary" onclick="requestJoin('teacher')">수업 시작하기</button>
-                <p class="teacher-link" onclick="toggleTeacherMode()">학생으로 돌아가기</p>
+                <div class="spacer"></div>
+                <div class="teacher-toggle-btn" onclick="toggleTeacherMode()">학생으로 돌아가기</div>
             </div>
         </div>
     </div>
@@ -42,54 +46,75 @@
     <div id="game-screen" class="screen">
         
         <div class="header">
-            <div class="header-left">
-                <div class="title">🏫 학급 경매</div>
-                <!-- 학생용 예산 표시 -->
-                <div id="my-budget-display" style="display:none;">내 돈: <span id="my-budget">0</span></div>
+            <div class="header-content">
+                <div class="title-group">
+                    <div class="title">🏫 학급 경매</div>
+                    <div class="code-box" id="code-display" onclick="toggleCode()">방번호: ???</div>
+                </div>
+                
+                <!-- 내 입찰 가능액 (매우 잘 보이게) -->
+                <div id="my-budget-container" style="display:none;">
+                    <span class="budget-label">나의 입찰 가능액</span>
+                    <span id="my-budget">0</span>
+                </div>
             </div>
-            <div class="code-box" id="code-display" onclick="toggleCode()">방번호: ???</div>
         </div>
 
         <div class="main-content">
+            <!-- 왼쪽 패널: 경매 정보 + 컨트롤 + 명단 -->
             <div class="panel left-panel">
-                <div class="status-card">
-                    <h3>현재 최고가</h3>
-                    <div class="price" id="current-price">0</div>
+                <div class="auction-info">
+                    <div class="price-box">
+                        <h3>현재 입찰가</h3>
+                        <div class="price" id="current-price">0</div>
+                    </div>
                     
                     <div id="winner-area" style="display:none;">
                         <img id="winner-img" src="">
                         <div id="winner-name"></div>
                     </div>
 
+                    <!-- 컨트롤 영역 -->
                     <div class="control-area">
                         <div class="timer-container">
                             <div class="timer-bar" id="timer-bar"></div>
                             <div class="timer-text" id="timer-text">20</div>
                         </div>
 
+                        <!-- 학생 입력창 -->
                         <div id="student-controls" class="input-group">
-                            <input type="number" id="bid-amount" placeholder="입찰금액 입력" disabled>
+                            <input type="number" id="bid-amount" placeholder="금액 입력" disabled>
                             <button id="btn-bid" onclick="sendBid()" disabled>입찰</button>
                         </div>
-                        <div class="msg" id="status-msg">선생님의 시작을 기다리는 중...</div>
+                        <div class="msg" id="status-msg">대기 중...</div>
 
+                        <!-- 선생님 컨트롤 -->
                         <div id="teacher-controls" style="display:none;">
                             <div class="teacher-btn-group">
-                                <button class="btn-action start" onclick="action('start')">입찰 시작</button>
+                                <button class="btn-action start" onclick="action('start')">시작</button>
+                                <button class="btn-action sold" onclick="action('sold')">낙찰</button>
                                 <button class="btn-action end" onclick="action('end')">종료</button>
                             </div>
-                            <button class="btn-action reset" onclick="action('reset')">🔄 새 방 만들기 (초기화)</button>
+                            <button class="btn-action reset" onclick="action('reset')">새 방 만들기</button>
                         </div>
                     </div>
                 </div>
+
+                <!-- 참여자 명단 (왼쪽 하단 고정) -->
+                <div class="participant-box">
+                    <div class="participant-header">참여자 명단 (<span id="user-count">0</span>명)</div>
+                    <div id="user-list" class="user-list"></div>
+                </div>
             </div>
 
+            <!-- 오른쪽 패널: 채팅 -->
             <div class="panel right-panel">
                 <div class="chat-header">실시간 상황</div>
                 <div class="chat-log" id="chat-log"></div>
             </div>
         </div>
 
+        <!-- 하단 장식용 아바타 -->
         <div class="footer">
             <div class="avatar-track" id="avatar-track"></div>
         </div>

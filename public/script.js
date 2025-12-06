@@ -4,7 +4,7 @@ let selectedAvatar = 1;
 let isTeacher = false;
 let myBudget = 0;
 
-// 1. 아바타 생성
+// 아바타 생성
 const avatarGrid = document.getElementById('avatar-grid');
 for (let i = 1; i <= 28; i++) {
     const img = document.createElement('img');
@@ -18,59 +18,44 @@ for (let i = 1; i <= 28; i++) {
     avatarGrid.appendChild(img);
 }
 
-// 2. 화면 전환
 function toggleTeacherMode() {
     const stdForm = document.getElementById('student-form');
     const teaForm = document.getElementById('teacher-form');
-    
     if (stdForm.style.display === 'none') {
-        stdForm.style.display = 'block';
-        teaForm.style.display = 'none';
+        stdForm.style.display = 'flex'; teaForm.style.display = 'none';
     } else {
-        stdForm.style.display = 'none';
-        teaForm.style.display = 'block';
+        stdForm.style.display = 'none'; teaForm.style.display = 'flex';
     }
 }
 
-// 3. 입장 요청
 function requestJoin(role) {
     const code = role === 'student' ? document.getElementById('room-code-input').value : '';
-    
     if (role === 'student') {
         const nickname = document.getElementById('nickname').value;
         const budget = document.getElementById('initial-budget').value;
-        
         if (!nickname) return alert('닉네임을 입력하세요!');
-        if (!budget) return alert('가진 돈을 입력하세요!');
+        if (!budget) return alert('입찰 가능액을 입력하세요!');
         if (!code) return alert('방번호를 입력하세요!');
-        
         socket.emit('join', { role: 'student', nickname, avatar: selectedAvatar, code, budget });
     } else {
         socket.emit('join', { role: 'teacher', nickname: '선생님', avatar: 1 });
     }
 }
 
-// 4. 소켓 응답 처리
 socket.on('login_error', (msg) => alert(msg));
-socket.on('force_reload', () => location.reload()); // 강제 새로고침 (방 리셋 시)
-socket.on('kicked', () => {
-    alert("선생님에 의해 퇴장되었습니다.");
-    location.reload();
-});
+socket.on('force_reload', () => location.reload());
+socket.on('kicked', () => { alert("퇴장되었습니다."); location.reload(); });
 
 socket.on('login_success', (data) => {
     isTeacher = (data.role === 'teacher');
-    
     if (isTeacher) {
         document.getElementById('teacher-controls').style.display = 'block';
         document.getElementById('student-controls').style.display = 'none';
     } else {
-        // 학생이면 예산 표시
         myBudget = data.budget;
         updateBudgetDisplay();
-        document.getElementById('my-budget-display').style.display = 'block';
+        document.getElementById('my-budget-container').style.display = 'block';
     }
-    
     document.getElementById('code-display').innerText = `방번호: ${data.roomCode}`;
     document.getElementById('login-screen').classList.remove('active');
     document.getElementById('game-screen').classList.add('active');
@@ -100,7 +85,6 @@ socket.on('log', (data) => {
 
 socket.on('update_price', (data) => {
     document.getElementById('current-price').innerText = Number(data.price).toLocaleString();
-    
     const winnerArea = document.getElementById('winner-area');
     if (isTeacher && data.bidder) {
         winnerArea.style.display = 'block';
@@ -112,26 +96,41 @@ socket.on('update_price', (data) => {
 });
 
 socket.on('update_users', (users) => {
+    // 1. 하단 푸터 (장식용)
     const track = document.getElementById('avatar-track');
     track.innerHTML = '';
+    
+    // 2. 좌측 명단
+    const list = document.getElementById('user-list');
+    list.innerHTML = '';
+    
+    let studentCount = 0;
+
     users.forEach(u => {
-        if (u.nickname === '선생님') return; 
+        if (u.nickname === '선생님') return;
+        studentCount++;
 
-        const div = document.createElement('div');
-        div.className = 'user-avatar';
-        
-        let kickHtml = '';
+        // 푸터
+        const footerDiv = document.createElement('div');
+        footerDiv.className = 'user-avatar';
+        footerDiv.innerHTML = `<img src="${u.avatar}.png"><div>${u.nickname}</div>`;
+        track.appendChild(footerDiv);
+
+        // 명단
+        const row = document.createElement('div');
+        row.className = 'user-row';
+        let btnHtml = '';
         if (isTeacher) {
-            kickHtml = `<div class="kick-btn" onclick="kickUser('${u.id}')">X</div>`;
+            btnHtml = `<button class="kick-btn" onclick="kickUser('${u.id}')">강퇴</button>`;
         }
-
-        div.innerHTML = `
-            ${kickHtml}
-            <img src="${u.avatar}.png">
-            <div>${u.nickname}</div>
+        row.innerHTML = `
+            <div><img src="${u.avatar}.png"> ${u.nickname} (${u.budget.toLocaleString()})</div>
+            ${btnHtml}
         `;
-        track.appendChild(div);
+        list.appendChild(row);
     });
+    
+    document.getElementById('user-count').innerText = studentCount;
 });
 
 socket.on('timer_update', (timeLeft) => {
@@ -184,18 +183,15 @@ document.getElementById('bid-amount').addEventListener('keypress', (e) => {
 });
 
 function kickUser(id) {
-    if (confirm("이 학생을 강퇴하시겠습니까?")) {
-        socket.emit('kick_user', id);
-    }
+    if (confirm("퇴장시키겠습니까?")) socket.emit('kick_user', id);
 }
 
 function action(type) {
     if (type === 'start') socket.emit('teacher_start');
-    if (type === 'end') socket.emit('teacher_end'); // 종료 (낙찰 X)
+    if (type === 'sold') socket.emit('teacher_sold'); // 낙찰
+    if (type === 'end') socket.emit('teacher_end'); // 종료
     if (type === 'reset') {
-        if(confirm("정말 새 방을 만드시겠습니까? 모든 접속자가 튕깁니다.")) {
-            socket.emit('teacher_reset_room');
-        }
+        if(confirm("모든 접속자가 퇴장되고 방이 초기화됩니다.")) socket.emit('teacher_reset_room');
     }
 }
 
