@@ -17,7 +17,6 @@
             
             <div id="student-form" class="form-content">
                 <p class="guide-text">내 캐릭터 선택</p>
-                <!-- 아바타 그리드를 스크롤 영역으로 -->
                 <div class="avatar-scroll-area">
                     <div class="avatar-grid" id="avatar-grid"></div>
                 </div>
@@ -52,7 +51,6 @@
                     <div class="code-box" id="code-display" onclick="toggleCode()">방번호: ???</div>
                 </div>
                 
-                <!-- 내 입찰 가능액 (매우 잘 보이게) -->
                 <div id="my-budget-container" style="display:none;">
                     <span class="budget-label">나의 입찰 가능액</span>
                     <span id="my-budget">0</span>
@@ -61,7 +59,6 @@
         </div>
 
         <div class="main-content">
-            <!-- 왼쪽 패널: 경매 정보 + 컨트롤 + 명단 -->
             <div class="panel left-panel">
                 <div class="auction-info">
                     <div class="price-box">
@@ -74,47 +71,45 @@
                         <div id="winner-name"></div>
                     </div>
 
-                    <!-- 컨트롤 영역 -->
                     <div class="control-area">
                         <div class="timer-container">
                             <div class="timer-bar" id="timer-bar"></div>
                             <div class="timer-text" id="timer-text">20</div>
                         </div>
 
-                        <!-- 학생 입력창 -->
                         <div id="student-controls" class="input-group">
                             <input type="number" id="bid-amount" placeholder="금액 입력" disabled>
                             <button id="btn-bid" onclick="sendBid()" disabled>입찰</button>
                         </div>
                         <div class="msg" id="status-msg">대기 중...</div>
 
-                        <!-- 선생님 컨트롤 -->
                         <div id="teacher-controls" style="display:none;">
                             <div class="teacher-btn-group">
-                                <button class="btn-action start" onclick="action('start')">시작</button>
-                                <button class="btn-action sold" onclick="action('sold')">낙찰</button>
-                                <button class="btn-action end" onclick="action('end')">종료</button>
+                                <!-- 스페이스바 하나로 시작/낙찰 토글 -->
+                                <button class="btn-action start" onclick="action('start')">시작 <small>(Space)</small></button>
+                                <button class="btn-action sold" onclick="action('sold')">낙찰 <small>(Space)</small></button>
                             </div>
-                            <button class="btn-action reset" onclick="action('reset')">새 방 만들기</button>
+                            <div class="teacher-btn-group">
+                                <!-- ESC 하나로 종료/초기화 토글 -->
+                                <button class="btn-action end" onclick="action('end')">종료 <small>(ESC)</small></button>
+                                <button class="btn-action reset" onclick="action('reset')">새 방 만들기 <small>(ESC)</small></button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 참여자 명단 (왼쪽 하단 고정) -->
                 <div class="participant-box">
                     <div class="participant-header">참여자 명단 (<span id="user-count">0</span>명)</div>
                     <div id="user-list" class="user-list"></div>
                 </div>
             </div>
 
-            <!-- 오른쪽 패널: 채팅 -->
             <div class="panel right-panel">
                 <div class="chat-header">실시간 상황</div>
                 <div class="chat-log" id="chat-log"></div>
             </div>
         </div>
 
-        <!-- 하단 장식용 아바타 -->
         <div class="footer">
             <div class="avatar-track" id="avatar-track"></div>
         </div>

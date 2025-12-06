@@ -3,6 +3,7 @@ const socket = io();
 let selectedAvatar = 1;
 let isTeacher = false;
 let myBudget = 0;
+let isAuctionRunning = false; // 현재 경매 진행 중인지 상태 추적
 
 // 아바타 생성
 const avatarGrid = document.getElementById('avatar-grid');
@@ -17,6 +18,13 @@ for (let i = 1; i <= 28; i++) {
     if (i === 1) img.classList.add('selected');
     avatarGrid.appendChild(img);
 }
+
+// === [추가됨] 로그인 화면에서 엔터 키 입력 시 입장 ===
+document.querySelectorAll('#student-form input').forEach(input => {
+    input.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') requestJoin('student');
+    });
+});
 
 function toggleTeacherMode() {
     const stdForm = document.getElementById('student-form');
@@ -86,7 +94,9 @@ socket.on('log', (data) => {
 socket.on('update_price', (data) => {
     document.getElementById('current-price').innerText = Number(data.price).toLocaleString();
     const winnerArea = document.getElementById('winner-area');
-    if (isTeacher && data.bidder) {
+    
+    // === [수정됨] 1등 입찰자를 모든 참여자에게 보여줌 (선생님 체크 제거) ===
+    if (data.bidder) {
         winnerArea.style.display = 'block';
         document.getElementById('winner-img').src = `${data.bidder.avatar}.png`;
         document.getElementById('winner-name').innerText = `1등: ${data.bidder.nickname}`;
@@ -100,59 +110,37 @@ socket.on('update_users', (users) => {
     renderUserList(users);
 });
 
-// 하단 푸터 렌더링 (강퇴 기능 포함)
 function renderFooterAvatars(users) {
     const track = document.getElementById('avatar-track');
     track.innerHTML = '';
-    
     users.forEach(u => {
         if (u.nickname === '선생님') return; 
-        
         const div = document.createElement('div');
         div.className = 'user-avatar';
-        
         let kickBtnHtml = '';
         if (isTeacher) {
-            // X 버튼: 이벤트 전파 막고(stopPropagation) 강퇴 함수 실행
             kickBtnHtml = `<div class="kick-btn-footer" onclick="event.stopPropagation(); kickUser('${u.id}')">X</div>`;
-            
-            // 모바일: 터치 시 X버튼 토글
-            div.onclick = function() {
-                this.classList.toggle('show-kick');
-            };
+            div.onclick = function() { this.classList.toggle('show-kick'); };
         }
-
-        div.innerHTML = `
-            ${kickBtnHtml}
-            <img src="${u.avatar}.png">
-            <div>${u.nickname}</div>
-        `;
+        div.innerHTML = `${kickBtnHtml}<img src="${u.avatar}.png"><div>${u.nickname}</div>`;
         track.appendChild(div);
     });
 }
 
-// 좌측 명단 렌더링
 function renderUserList(users) {
     const list = document.getElementById('user-list');
     list.innerHTML = '';
     let studentCount = 0;
-
     users.forEach(u => {
         if (u.nickname === '선생님') return;
         studentCount++;
-
         const row = document.createElement('div');
         row.className = 'user-row';
-        
         let btnHtml = '';
         if (isTeacher) {
             btnHtml = `<button class="kick-btn" onclick="kickUser('${u.id}')">강퇴</button>`;
         }
-        
-        row.innerHTML = `
-            <div><img src="${u.avatar}.png"> ${u.nickname} (${u.budget.toLocaleString()})</div>
-            ${btnHtml}
-        `;
+        row.innerHTML = `<div><img src="${u.avatar}.png"> ${u.nickname} (${u.budget.toLocaleString()})</div>${btnHtml}`;
         list.appendChild(row);
     });
     document.getElementById('user-count').innerText = studentCount;
@@ -169,6 +157,7 @@ socket.on('timer_update', (timeLeft) => {
 });
 
 socket.on('auction_start', () => {
+    isAuctionRunning = true; // 경매 시작 상태
     if (!isTeacher) {
         document.getElementById('bid-amount').disabled = false;
         document.getElementById('btn-bid').disabled = false;
@@ -179,6 +168,7 @@ socket.on('auction_start', () => {
 });
 
 socket.on('auction_end', () => {
+    isAuctionRunning = false; // 경매 종료 상태
     document.getElementById('bid-amount').disabled = true;
     document.getElementById('btn-bid').disabled = true;
     document.getElementById('status-msg').style.display = 'block';
@@ -223,3 +213,28 @@ function action(type) {
 function toggleCode() {
     if (isTeacher) document.getElementById('code-display').classList.toggle('big');
 }
+
+// === [추가됨] 선생님 단축키 로직 ===
+document.addEventListener('keydown', (e) => {
+    if (!isTeacher) return;
+    // 입력창 사용 중일 땐 단축키 무시
+    if (e.target.tagName === 'INPUT') return;
+
+    if (e.code === 'Space') {
+        e.preventDefault(); // 스크롤 방지
+        if (isAuctionRunning) {
+            action('sold'); // 진행 중이면 '낙찰'
+        } else {
+            action('start'); // 멈춰있으면 '시작'
+        }
+    }
+    
+    if (e.code === 'Escape') {
+        e.preventDefault();
+        if (isAuctionRunning) {
+            action('end'); // 진행 중이면 '종료'
+        } else {
+            action('reset'); // 멈춰있으면 '새 방 만들기'
+        }
+    }
+});
