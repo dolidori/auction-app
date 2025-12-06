@@ -70,21 +70,39 @@ input:focus { border-color: #5C6BC0; }
 .price-box h3 { margin: 0; color: #888; font-size: 1rem; }
 .price { font-size: 3rem; color: #FF4081; font-weight: bold; margin: 5px 0 15px 0; }
 
-/* 참여자 명단 - 높이 확보 */
+/* --- [수정됨] 1등 표시 영역 --- */
+#winner-area { margin-bottom: 15px; animation: pop 0.4s; }
+#winner-img { 
+    width: 90px; height: 90px; /* 크기 줄임 (120 -> 90) */
+    border-radius: 50%; border: 3px solid #FF4081;
+}
+#winner-name { 
+    font-size: 2.4rem; /* 폰트 키움 (1.8 -> 2.4) */
+    font-weight: bold; margin-top: 5px; color: #333; 
+    text-shadow: 1px 1px 0px #eee;
+}
+
+/* --- [수정됨] 참여자 명단 스크롤 --- */
 .participant-box { 
     flex: 1; /* 남은 공간 모두 차지 */
     display: flex; flex-direction: column; 
     border-top: 1px dashed #eee; padding-top: 10px; 
-    min-height: 200px; /* 최소 높이 보장 (중요!) */
+    min-height: 0; /* Flex 자식 요소의 스크롤을 위해 필수 */
     overflow: hidden;
 }
 .participant-header { font-size: 0.9rem; color: #777; margin-bottom: 5px; flex-shrink: 0; }
 .user-list { 
-    flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; 
+    flex: 1; 
+    overflow-y: auto; /* 내부 스크롤 활성화 */
+    display: flex; flex-direction: column; gap: 5px; 
 }
+/* 스크롤바 디자인 (크롬/사파리) */
+.user-list::-webkit-scrollbar { width: 6px; }
+.user-list::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
+
 .user-row { 
     display: flex; justify-content: space-between; align-items: center; 
-    padding: 6px 10px; background: #f9f9f9; border-radius: 5px; font-size: 0.9rem; flex-shrink: 0;
+    padding: 8px 10px; background: #f9f9f9; border-radius: 5px; font-size: 0.95rem; flex-shrink: 0;
 }
 .user-row img { width: 24px; height: 24px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
 .kick-btn { background: #ff5252; color: white; border: none; border-radius: 4px; padding: 2px 6px; font-size: 0.8rem; cursor: pointer; }
@@ -125,7 +143,7 @@ input:focus { border-color: #5C6BC0; }
 .user-avatar { 
     text-align: center; position: relative; 
     animation: bounce 1.5s infinite ease-in-out; 
-    min-width: 50px; cursor: pointer; /* 클릭 가능 표시 */
+    min-width: 50px; cursor: pointer;
 }
 .user-avatar img { width: 50px; height: 50px; border-radius: 50%; box-shadow: 0 3px 6px rgba(0,0,0,0.1); }
 .user-avatar div { font-size: 0.8rem; background: white; border-radius: 5px; padding: 1px 4px; margin-top: 2px; display: inline-block; color: #555; }
@@ -146,11 +164,37 @@ input:focus { border-color: #5C6BC0; }
 .user-avatar.show-kick .kick-btn-footer { display: flex; animation: none; }
 
 @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes pop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
+/* === 모바일 대응 (이 부분을 수정하세요) === */
 @media (max-width: 768px) {
-    .main-content { flex-direction: column; }
+    .main-content { 
+        flex-direction: column; 
+        /* 푸터가 고정이 아니므로 하단 여백 줄임 */
+        padding-bottom: 20px; 
+    }
+    
     .price { font-size: 2.5rem; }
     .title { display: none; }
     .header-content { justify-content: space-between; }
     .login-card { width: 95%; padding: 15px; }
+
+    /* 모바일에서는 푸터 고정 해제 -> 입력창 가림 방지 */
+    .footer { 
+        position: relative; /* fixed -> relative 변경 */
+        height: auto; 
+        min-height: 100px;
+        background: transparent; /* 배경 투명하게 */
+        border-top: none;
+        padding-top: 0;
+        margin-top: 10px;
+        z-index: 1;
+    }
+    
+    /* 패널 높이 유동적으로 */
+    .right-panel { min-height: 150px; flex: none; }
+    .left-panel { flex: none; }
+    
+    /* 입력창 가리지 않게 스크롤 확보 */
+    .panel { overflow: visible; }
 }

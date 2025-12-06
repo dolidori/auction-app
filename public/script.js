@@ -3,7 +3,7 @@ const socket = io();
 let selectedAvatar = 1;
 let isTeacher = false;
 let myBudget = 0;
-let isAuctionRunning = false; // 현재 경매 진행 중인지 상태 추적
+let isAuctionRunning = false;
 
 // 아바타 생성
 const avatarGrid = document.getElementById('avatar-grid');
@@ -19,7 +19,7 @@ for (let i = 1; i <= 28; i++) {
     avatarGrid.appendChild(img);
 }
 
-// === [추가됨] 로그인 화면에서 엔터 키 입력 시 입장 ===
+// 로그인 엔터 키
 document.querySelectorAll('#student-form input').forEach(input => {
     input.addEventListener('keyup', (e) => {
         if (e.key === 'Enter') requestJoin('student');
@@ -95,7 +95,6 @@ socket.on('update_price', (data) => {
     document.getElementById('current-price').innerText = Number(data.price).toLocaleString();
     const winnerArea = document.getElementById('winner-area');
     
-    // === [수정됨] 1등 입찰자를 모든 참여자에게 보여줌 (선생님 체크 제거) ===
     if (data.bidder) {
         winnerArea.style.display = 'block';
         document.getElementById('winner-img').src = `${data.bidder.avatar}.png`;
@@ -157,7 +156,7 @@ socket.on('timer_update', (timeLeft) => {
 });
 
 socket.on('auction_start', () => {
-    isAuctionRunning = true; // 경매 시작 상태
+    isAuctionRunning = true;
     if (!isTeacher) {
         document.getElementById('bid-amount').disabled = false;
         document.getElementById('btn-bid').disabled = false;
@@ -168,7 +167,7 @@ socket.on('auction_start', () => {
 });
 
 socket.on('auction_end', () => {
-    isAuctionRunning = false; // 경매 종료 상태
+    isAuctionRunning = false;
     document.getElementById('bid-amount').disabled = true;
     document.getElementById('btn-bid').disabled = true;
     document.getElementById('status-msg').style.display = 'block';
@@ -184,18 +183,30 @@ socket.on('play_sound', (type) => {
     }
 });
 
+// === [수정됨] 입찰 기능 및 키보드 유지 로직 ===
+const btnBid = document.getElementById('btn-bid');
+
+// 버튼 클릭 시 포커스 뺏김 방지
+btnBid.addEventListener('mousedown', (e) => e.preventDefault());
+btnBid.addEventListener('touchstart', (e) => e.preventDefault());
+
 function sendBid() {
     const input = document.getElementById('bid-amount');
     const val = parseInt(input.value);
+    
     if (val > 0) {
         socket.emit('bid', val);
         input.value = '';
-        input.focus();
+        
+        // 포커스 재확인
+        setTimeout(() => input.focus(), 10);
     }
 }
+
 document.getElementById('bid-amount').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendBid();
 });
+// ============================================
 
 function kickUser(id) {
     if (confirm("퇴장시키겠습니까?")) socket.emit('kick_user', id);
@@ -214,27 +225,18 @@ function toggleCode() {
     if (isTeacher) document.getElementById('code-display').classList.toggle('big');
 }
 
-// === [추가됨] 선생님 단축키 로직 ===
 document.addEventListener('keydown', (e) => {
     if (!isTeacher) return;
-    // 입력창 사용 중일 땐 단축키 무시
     if (e.target.tagName === 'INPUT') return;
 
     if (e.code === 'Space') {
-        e.preventDefault(); // 스크롤 방지
-        if (isAuctionRunning) {
-            action('sold'); // 진행 중이면 '낙찰'
-        } else {
-            action('start'); // 멈춰있으면 '시작'
-        }
+        e.preventDefault();
+        if (isAuctionRunning) { action('sold'); } 
+        else { action('start'); }
     }
-    
     if (e.code === 'Escape') {
         e.preventDefault();
-        if (isAuctionRunning) {
-            action('end'); // 진행 중이면 '종료'
-        } else {
-            action('reset'); // 멈춰있으면 '새 방 만들기'
-        }
+        if (isAuctionRunning) { action('end'); } 
+        else { action('reset'); }
     }
 });
