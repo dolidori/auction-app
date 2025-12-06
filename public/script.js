@@ -183,12 +183,22 @@ socket.on('play_sound', (type) => {
     }
 });
 
-// === [수정됨] 입찰 기능 및 키보드 유지 로직 ===
+// === [수정됨] 입찰 버튼 및 키보드 유지 로직 ===
 const btnBid = document.getElementById('btn-bid');
 
-// 버튼 클릭 시 포커스 뺏김 방지
-btnBid.addEventListener('mousedown', (e) => e.preventDefault());
-btnBid.addEventListener('touchstart', (e) => e.preventDefault());
+// PC: 마우스 클릭 시 포커스 유지 (preventDefault가 클릭 이벤트는 발생시킴)
+btnBid.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+});
+
+// 모바일: 터치 시 포커스 유지 + 입찰 함수 직접 호출
+// (touchstart에서 preventDefault를 하면 click 이벤트가 발생하지 않으므로 onclick이 작동 안 함 -> 수동 실행 필요)
+btnBid.addEventListener('touchstart', (e) => {
+    e.preventDefault(); 
+    if (!btnBid.disabled) {
+        sendBid();
+    }
+});
 
 function sendBid() {
     const input = document.getElementById('bid-amount');
@@ -198,7 +208,7 @@ function sendBid() {
         socket.emit('bid', val);
         input.value = '';
         
-        // 포커스 재확인
+        // 포커스 재확인 (모바일 호환성)
         setTimeout(() => input.focus(), 10);
     }
 }
@@ -206,7 +216,7 @@ function sendBid() {
 document.getElementById('bid-amount').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendBid();
 });
-// ============================================
+// ===============================================
 
 function kickUser(id) {
     if (confirm("퇴장시키겠습니까?")) socket.emit('kick_user', id);
@@ -230,7 +240,7 @@ document.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT') return;
 
     if (e.code === 'Space') {
-        e.preventDefault();
+        e.preventDefault(); 
         if (isAuctionRunning) { action('sold'); } 
         else { action('start'); }
     }
