@@ -96,42 +96,67 @@ socket.on('update_price', (data) => {
 });
 
 socket.on('update_users', (users) => {
-    // 1. 하단 푸터 (장식용)
+    renderFooterAvatars(users);
+    renderUserList(users);
+});
+
+// 하단 푸터 렌더링 (강퇴 기능 포함)
+function renderFooterAvatars(users) {
     const track = document.getElementById('avatar-track');
     track.innerHTML = '';
     
-    // 2. 좌측 명단
+    users.forEach(u => {
+        if (u.nickname === '선생님') return; 
+        
+        const div = document.createElement('div');
+        div.className = 'user-avatar';
+        
+        let kickBtnHtml = '';
+        if (isTeacher) {
+            // X 버튼: 이벤트 전파 막고(stopPropagation) 강퇴 함수 실행
+            kickBtnHtml = `<div class="kick-btn-footer" onclick="event.stopPropagation(); kickUser('${u.id}')">X</div>`;
+            
+            // 모바일: 터치 시 X버튼 토글
+            div.onclick = function() {
+                this.classList.toggle('show-kick');
+            };
+        }
+
+        div.innerHTML = `
+            ${kickBtnHtml}
+            <img src="${u.avatar}.png">
+            <div>${u.nickname}</div>
+        `;
+        track.appendChild(div);
+    });
+}
+
+// 좌측 명단 렌더링
+function renderUserList(users) {
     const list = document.getElementById('user-list');
     list.innerHTML = '';
-    
     let studentCount = 0;
 
     users.forEach(u => {
         if (u.nickname === '선생님') return;
         studentCount++;
 
-        // 푸터
-        const footerDiv = document.createElement('div');
-        footerDiv.className = 'user-avatar';
-        footerDiv.innerHTML = `<img src="${u.avatar}.png"><div>${u.nickname}</div>`;
-        track.appendChild(footerDiv);
-
-        // 명단
         const row = document.createElement('div');
         row.className = 'user-row';
+        
         let btnHtml = '';
         if (isTeacher) {
             btnHtml = `<button class="kick-btn" onclick="kickUser('${u.id}')">강퇴</button>`;
         }
+        
         row.innerHTML = `
             <div><img src="${u.avatar}.png"> ${u.nickname} (${u.budget.toLocaleString()})</div>
             ${btnHtml}
         `;
         list.appendChild(row);
     });
-    
     document.getElementById('user-count').innerText = studentCount;
-});
+}
 
 socket.on('timer_update', (timeLeft) => {
     const bar = document.getElementById('timer-bar');
@@ -188,8 +213,8 @@ function kickUser(id) {
 
 function action(type) {
     if (type === 'start') socket.emit('teacher_start');
-    if (type === 'sold') socket.emit('teacher_sold'); // 낙찰
-    if (type === 'end') socket.emit('teacher_end'); // 종료
+    if (type === 'sold') socket.emit('teacher_sold'); 
+    if (type === 'end') socket.emit('teacher_end'); 
     if (type === 'reset') {
         if(confirm("모든 접속자가 퇴장되고 방이 초기화됩니다.")) socket.emit('teacher_reset_room');
     }
